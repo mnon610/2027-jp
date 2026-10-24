@@ -1,0 +1,1462 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2027 日本東京・箱根・鎌倉 6日行程表</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700;900&family=Inter:wght@500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Leaflet CSS & FontAwesome (為阿美橫町互動地圖引入) -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background-color: #f4f5f7;
+            color: #1f2937;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* 隱藏滾動條但保留滾動功能 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 自訂時間軸虛線動畫與微調 */
+        .timeline-line {
+            background-image: linear-gradient(to bottom, #d1d5db 50%, rgba(255,255,255,0) 0%);
+            background-position: center;
+            background-size: 2px 10px;
+            background-repeat: repeat-y;
+        }
+        .card-shadow {
+            box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 1px 3px 0 rgba(0, 0, 0, 0.03);
+        }
+        .tap-effect:active {
+            transform: scale(0.98);
+            transition: transform 0.1s;
+        }
+        /* 阿美橫町地圖專屬樣式 */
+        #map { height: 100%; width: 100%; z-index: 10; }
+        .custom-popup .leaflet-popup-content-wrapper {
+            border-radius: 0.75rem;
+            padding: 0;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(120, 53, 15, 0.15), 0 4px 6px -2px rgba(120, 53, 15, 0.1);
+            border: 1px solid #FEF3C7;
+        }
+        .custom-popup .leaflet-popup-content { margin: 0; width: 260px !important; }
+        .autumn-bg {
+            background-color: #FAFAF9;
+            background-image: radial-gradient(#FDE68A 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-16">
+
+    <!-- 頂部導覽與標題 -->
+    <header class="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-200 shadow-sm">
+        <div class="max-w-xl mx-auto px-4 pt-4 pb-2">
+            <div class="flex items-center justify-between mb-3">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="bg-red-50 text-red-600 text-xs font-bold px-2.5 py-0.5 rounded-full border border-red-200">2027 春季賞櫻</span>
+                        <span class="text-xs text-gray-500 font-medium">4/5 (一) - 4/10 (六)</span>
+                    </div>
+                    <h1 class="text-xl font-black text-gray-900 tracking-tight mt-0.5">東京・箱根・鎌倉 交通與行程案內</h1>
+                </div>
+                <button onclick="switchTab('budget')" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-xl text-xs font-bold transition shadow-sm">
+                    <i class="ph-bold ph-coins text-base text-amber-600"></i>
+                    <span>預算總表</span>
+                </button>
+            </div>
+
+            <!-- 日期切換 Tabs -->
+            <div class="flex space-x-1.5 overflow-x-auto no-scrollbar pb-1" id="day-tabs">
+                <!-- 由 JS 動態生成 -->
+            </div>
+        </div>
+    </header>
+
+    <!-- 主內容區 -->
+    <main class="max-w-xl mx-auto px-3 sm:px-4 pt-4">
+        
+        <!-- 當日摘要資訊條 -->
+        <div id="day-summary" class="bg-white rounded-2xl p-4 mb-4 card-shadow border border-gray-100 flex items-center justify-between">
+            <!-- 由 JS 動態更新 -->
+        </div>
+
+        <!-- 時間軸路線卡片容器 -->
+        <div id="itinerary-container" class="bg-white rounded-3xl p-4 sm:p-6 card-shadow border border-gray-100">
+            <!-- 由 JS 動態渲染路線圖 -->
+        </div>
+
+        <!-- 預算與明細視圖 (預設隱藏) -->
+        <div id="budget-container" class="hidden space-y-4">
+            <!-- 總覽卡片 -->
+            <div class="bg-gradient-to-br from-orange-500 to-amber-600 rounded-3xl p-6 text-white shadow-lg">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-orange-100 text-sm font-medium">預估總支出 (台幣)</span>
+                    <span class="bg-white/20 px-2.5 py-1 rounded-full text-xs font-semibold backdrop-blur-sm">匯率換算約 0.21~0.22</span>
+                </div>
+                <div class="text-4xl font-black tracking-tight mb-4">NT$ 37,800</div>
+                <div class="grid grid-cols-2 gap-3 pt-4 border-t border-white/20 text-sm">
+                    <div>
+                        <div class="text-orange-100 text-xs">台灣行前總支出</div>
+                        <div class="font-bold text-lg">NT$ 25,400</div>
+                    </div>
+                    <div>
+                        <div class="text-orange-100 text-xs">日本當地總支出</div>
+                        <div class="font-bold text-lg">NT$ 12,400 <span class="text-xs font-normal opacity-80">(¥58,000)</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 機酒票券費用 (台灣支出) -->
+            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100">
+                <h3 class="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
+                    <i class="ph-fill ph-airplane-tilt text-orange-500 text-xl"></i>
+                    機酒與票券費用 (台幣計價)
+                </h3>
+                <div class="divide-y divide-gray-100 text-sm">
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div class="flex items-center gap-2">
+                            <span class="font-medium text-gray-800">來回機票 (國泰 CX450)</span>
+                            <span class="bg-green-100 text-green-700 text-[11px] font-bold px-1.5 py-0.5 rounded">已確認 V</span>
+                        </div>
+                        <span class="font-bold text-gray-900">NT$ 17,000</span>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <span class="text-gray-600">eSIM 網卡</span>
+                        <span class="font-bold text-gray-900">NT$ 420</span>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div>
+                            <span class="text-gray-600">台灣高鐵來回 (台中-桃園)</span>
+                            <span class="text-xs text-gray-400 block">540 × 2</span>
+                        </div>
+                        <span class="font-bold text-gray-900">NT$ 1,080</span>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <span class="text-gray-600">成田特快 N'EX 來回票</span>
+                        <span class="font-bold text-gray-900">NT$ 1,200</span>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div>
+                            <span class="text-gray-600">箱根鎌倉周遊券 (3日)</span>
+                            <span class="text-xs text-gray-400 block">原價 ¥8,520 (省下大量單程票)</span>
+                        </div>
+                        <span class="font-bold text-gray-900">NT$ 1,700</span>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <span class="text-gray-600">淺草屋形船體驗</span>
+                        <span class="font-bold text-gray-900">NT$ 4,000</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 日本當地費用 -->
+            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100">
+                <h3 class="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
+                    <i class="ph-fill ph-buildings text-emerald-600 text-xl"></i>
+                    日本住宿與生活預估
+                </h3>
+                <div class="divide-y divide-gray-100 text-sm">
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-800">日本住宿</span>
+                                <span class="bg-green-100 text-green-700 text-[11px] font-bold px-1.5 py-0.5 rounded">已確認 V</span>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-gray-900 block">NT$ 7,560</span>
+                            <span class="text-xs text-gray-500">¥ 36,000</span>
+                        </div>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div>
+                            <span class="font-medium text-gray-800">日本預估支出 (餐費+交通)</span>
+                            <span class="text-xs text-gray-400 block">餐費 ¥1,500 × 14餐 = ¥21,000｜含洗衣分攤</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-gray-900 block">NT$ 4,840</span>
+                            <span class="text-xs text-gray-500">¥ 22,000</span>
+                        </div>
+                    </div>
+                    <div class="py-2.5 flex justify-between items-center">
+                        <div>
+                            <span class="font-medium text-gray-800">Manaca IC卡儲值準備</span>
+                            <span class="text-xs text-gray-400 block">Day 1 成田第二航廈儲值日本基本交通</span>
+                        </div>
+                        <div class="text-right">
+                            <span class="font-bold text-emerald-700 block">¥ 6,000</span>
+                            <span class="text-xs text-gray-400">实际搭乘扣款約 ¥4,905</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 每日 IC 卡實際扣款小計 -->
+            <div class="bg-white rounded-3xl p-5 card-shadow border border-gray-100">
+                <h3 class="font-bold text-gray-900 text-base mb-3 flex items-center gap-2">
+                    <i class="ph-fill ph-train text-blue-600 text-xl"></i>
+                    每日 IC 卡自費交通明細 (不含PASS)
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-sm">
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="text-xs text-gray-500">Day 1 (4/5)</div>
+                        <div class="font-bold text-gray-900 text-base mt-0.5">¥ 0</div>
+                        <div class="text-[11px] text-gray-400">使用 N'EX 來回票</div>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="text-xs text-gray-500">Day 2 (4/6)</div>
+                        <div class="font-bold text-gray-900 text-base mt-0.5">¥ 1,430</div>
+                        <div class="text-[11px] text-gray-400">大船⇄小田原 JR</div>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="text-xs text-gray-500">Day 3 (4/7)</div>
+                        <div class="font-bold text-gray-900 text-base mt-0.5">¥ 1,113</div>
+                        <div class="text-[11px] text-gray-400">JR線段 + 自費項目</div>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="text-xs text-gray-500">Day 4 (4/8)</div>
+                        <div class="font-bold text-gray-900 text-base mt-0.5">¥ 853</div>
+                        <div class="text-[11px] text-gray-400">淺草・上野地鐵JR</div>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="text-xs text-gray-500">Day 5 (4/9)</div>
+                        <div class="font-bold text-gray-900 text-base mt-0.5">¥ 1,509</div>
+                        <div class="text-[11px] text-gray-400">東京都內賞櫻地鐵</div>
+                    </div>
+                    <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
+                        <div class="text-xs text-gray-500">Day 6 (4/10)</div>
+                        <div class="font-bold text-gray-900 text-base mt-0.5">¥ 0</div>
+                        <div class="text-[11px] text-gray-400">使用 N'EX 回程票</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- ================= 阿美橫町地圖 Modal (整合自 5Ameya.html) ================= -->
+    <div id="ameyo-map-modal" class="fixed inset-0 z-[100] hidden flex justify-center sm:items-center sm:p-6 bg-stone-900/80 backdrop-blur-sm transition-opacity duration-300 opacity-0">
+        <div class="w-full h-full sm:h-[90vh] sm:max-w-md bg-stone-50 sm:rounded-[2rem] flex flex-col overflow-hidden shadow-2xl relative transform transition-transform duration-300 scale-95" id="ameyo-map-content">
+            
+            <!-- 地圖 Header -->
+            <header class="bg-gradient-to-r from-amber-800 via-orange-700 to-amber-700 text-stone-50 p-3 shadow-lg z-20 flex-shrink-0 flex items-center relative overflow-hidden border-b-4 border-amber-600">
+                <i class="fa-brands fa-canadian-maple-leaf absolute -bottom-4 right-10 text-6xl text-orange-500 opacity-30 transform rotate-12"></i>
+                <i class="fa-brands fa-canadian-maple-leaf absolute top-1 right-32 text-3xl text-amber-500 opacity-20 transform -rotate-12"></i>
+                
+                <button onclick="closeMapModal()" class="text-white hover:text-amber-200 transition-colors px-2 py-1 mr-2 text-base z-10 tap-effect">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                
+                <div class="flex items-center gap-2 relative z-10 flex-1">
+                    <h1 class="text-base font-bold tracking-wide text-white drop-shadow-sm flex items-center gap-2">
+                        阿美橫町攻略地圖
+                    </h1>
+                </div>
+            </header>
+
+            <!-- Map & List 容器 -->
+            <div class="flex-1 flex flex-col overflow-hidden relative">
+                <!-- Leaflet Map -->
+                <div class="w-full h-[40%] relative flex-shrink-0 border-b-2 border-amber-200 bg-stone-100 z-10">
+                    <div id="map"></div>
+                    <button onclick="centerMap()" class="absolute bottom-3 right-3 bg-white/95 backdrop-blur-sm p-2.5 rounded-full shadow-lg z-[400] text-amber-800 hover:text-orange-600 hover:bg-orange-50 transition border border-amber-100 tap-effect">
+                        <i class="fa-solid fa-crosshairs text-base"></i>
+                    </button>
+                </div>
+
+                <!-- List 區域 -->
+                <div class="w-full h-[60%] bg-stone-50 flex flex-col flex-shrink-0 relative">
+                    <!-- Tabs -->
+                    <div class="bg-white shadow-sm z-10 flex-shrink-0 flex border-b border-amber-200">
+                        <button onclick="setFilter('all')" id="tab-all" class="flex-1 py-2.5 text-xs font-bold text-amber-800 border-b-2 border-amber-800 transition flex items-center justify-center gap-1.5 bg-orange-50/60 tap-effect">
+                            <i class="fa-solid fa-layer-group"></i> 全部
+                        </button>
+                        <button onclick="setFilter('food')" id="tab-food" class="flex-1 py-2.5 text-xs font-bold text-stone-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-orange-50/40 transition flex items-center justify-center gap-1.5 tap-effect">
+                            <i class="fa-solid fa-utensils"></i> 美食
+                        </button>
+                        <button onclick="setFilter('drugstore')" id="tab-drugstore" class="flex-1 py-2.5 text-xs font-bold text-stone-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-orange-50/40 transition flex items-center justify-center gap-1.5 tap-effect">
+                            <i class="fa-solid fa-pills"></i> 藥妝
+                        </button>
+                    </div>
+                    
+                    <!-- List Header Info -->
+                    <div class="px-3 py-1.5 bg-stone-100/80 border-b border-amber-100 flex justify-between items-center flex-shrink-0 backdrop-blur-sm">
+                        <p class="text-xs text-amber-900/70 font-bold" id="list-counter">顯示全部</p>
+                        <p class="text-xs text-stone-400"><i class="fa-brands fa-canadian-maple-leaf mr-1"></i>點擊卡片定位</p>
+                    </div>
+
+                    <!-- 列表 -->
+                    <div id="restaurant-list" class="flex-1 overflow-y-auto no-scrollbar p-3 space-y-3 pb-8 autumn-bg relative"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+
+    <script>
+        // 完整行程資料庫 (嚴格依據 2027JP.pdf 內容建構並轉化為地鐵導航視覺格式)
+        const itineraryData = [
+            {
+                day: "Day 1",
+                date: "4/5 (一)",
+                title: "台灣出發 ➔ 成田機場 ➔ 大船",
+                totalYen: "¥0",
+                extraNote: "台灣端支出：高鐵 NTD 540 + 機捷 NTD 35 + N'EX來回 NTD 1,200｜成田二廈儲值 Manaca ¥6,000",
+                nodes: [
+                    {
+                        code: "THSR",
+                        color: "#e65100",
+                        station: "台中高鐵站",
+                        status: "起點站",
+                        statusType: "start",
+                        mapQuery: "https://maps.app.goo.gl/PQ3UQFrCVJfVsCBk7",
+                        nextLeg: {
+                            duration: "約 40 分",
+                            lineColor: "#e65100",
+                            lineName: "台灣高鐵 (AM 09:00 發車) ・ 往桃園站",
+                            fareBadge: "NTD 540"
+                        }
+                    },
+                    {
+                        code: "A18",
+                        color: "#7e57c2",
+                        station: "高鐵桃園站",
+                        transferNote: "站內換乘桃園機場捷運 (AM 09:47 發車)",
+                        mapQuery: "https://maps.app.goo.gl/KTfrqzi9p1QZjzWN6",
+                        nextLeg: {
+                            duration: "約 20 分",
+                            lineColor: "#7e57c2",
+                            lineName: "桃園機場捷運 ・ 往第一航廈",
+                            fareBadge: "NTD 35"
+                        }
+                    },
+                    {
+                        code: "TPE",
+                        color: "#006564",
+                        station: "桃園第一航廈",
+                        subName: "(T1)",
+                        transferNote: "辦理登機手續 ・ 國泰航空 CX450",
+                        mapQuery: "https://maps.app.goo.gl/q1tDCQ4cAUz7skhp9",
+                        nextLeg: {
+                            duration: "約 3 小時",
+                            lineColor: "#006564",
+                            lineName: "國泰航空 CX450 (13:00 ~ 17:15) ・ 往東京成田",
+                            fareBadge: "來回機票 NTD 17,000"
+                        }
+                    },
+                    {
+                        code: "NRT",
+                        color: "#dc2626",
+                        station: "成田第二航廈",
+                        platform: "1",
+                        transferNote: "入境領取車票 ・ Manaca IC卡儲值 ¥6,000",
+                        mapQuery: "https://maps.app.goo.gl/Za9jjpfzMWsg3PAx7",
+                        nextLeg: {
+                            duration: "約 2 小時",
+                            lineColor: "#dc2626",
+                            lineName: "成田特快 N'EX (19:53 ~ 21:41) ・ 往大船行",
+                            fareBadge: "NTD 1,200 (N'EX來回)"
+                        }
+                    },
+                    {
+                        code: "OFN",
+                        color: "#f97316",
+                        station: "大船",
+                        platform: "7",
+                        status: "目的地",
+                        statusType: "end",
+                        mapQuery: "https://maps.app.goo.gl/FsWgxymkpnQmaa219",
+                        exits: [
+                            { text: "西出口 (飯店方向)", style: "yellow" }
+                        ],
+                        pois: [
+                            { icon: "ph-bed", color: "text-orange-500", name: "大船住宿 Check-in", query: "https://maps.app.goo.gl/McGsPZFtbLU8MRvd6" }
+                        ],
+                        areaMapTitle: "開啟大船車站周邊地圖",
+                        areaMapQuery: "https://maps.app.goo.gl/FsWgxymkpnQmaa219"
+                    }
+                ]
+            },
+            {
+                day: "Day 2",
+                date: "4/6 (二)",
+                title: "箱根經典環遊一日遊 (登山纜車・大湧谷・海盜船)",
+                totalYen: "¥1,430",
+                extraNote: "使用箱根鎌倉周遊券 PASS (原價加總 360+460+430+2000+2000+1700+1210+360 = ¥8,520 全免)",
+                nodes: [
+                    {
+                        code: "JT07",
+                        color: "#f97316",
+                        station: "大船",
+                        platform: "3",
+                        status: "起點站",
+                        statusType: "start",
+                        mapQuery: "https://maps.app.goo.gl/oAF76gKTc5nDkpUZ6",
+                        nextLeg: {
+                            duration: "約 41 分",
+                            lineColor: "#f97316",
+                            lineName: "JR東海道本線 (08:25 發車) ・ 往熱海行"
+                        }
+                    },
+                    {
+                        code: "OH47",
+                        color: "#ef4444",
+                        station: "小田原",
+                        platform: "3 ➔ 11",
+                        fare: "自大船 ¥715",
+                        transferNote: "轉乘箱根登山線 (3號月台下車 ➔ 11號月台乘車)",
+                        mapQuery: "https://maps.app.goo.gl/gBVKXkSFXtjBH5R7A",
+                        nextLeg: {
+                            duration: "約 15 分",
+                            lineColor: "#ef4444",
+                            lineName: "箱根登山線 ・ 往箱根湯本行",
+                            fareBadge: "周遊券 PASS"
+                        }
+                    },
+                    {
+                        code: "OH51",
+                        color: "#ef4444",
+                        station: "箱根湯本",
+                        platform: "3",
+                        fare: "周遊券 PASS",
+                        transferNote: "站內換乘箱根登山鐵路 (往強羅方向)",
+                        mapQuery: "https://maps.app.goo.gl/Bd8QkRJJK1FCVESW7",
+                        nextLeg: {
+                            duration: "約 40 分",
+                            lineColor: "#ef4444",
+                            lineName: "箱根登山鐵路 ・ 往強羅行"
+                        }
+                    },
+                    {
+                        code: "OH57",
+                        color: "#0284c7",
+                        station: "強羅",
+                        fare: "周遊券 PASS",
+                        transferNote: "換乘箱根登山纜車 (Cable Car)",
+                        mapQuery: "https://maps.app.goo.gl/W56WH8hUZMHvY9aX9",
+                        nextLeg: {
+                            duration: "約 11 分",
+                            lineColor: "#0284c7",
+                            lineName: "箱根登山纜車 ・ 往早雲山行"
+                        }
+                    },
+                    {
+                        code: "OH62",
+                        color: "#0d9488",
+                        station: "早雲山",
+                        fare: "周遊券 PASS",
+                        transferNote: "換乘箱根空中纜車 (Ropeway)",
+                        mapQuery: "https://maps.app.goo.gl/gNnkSYWL5BXqdHEo9",
+                        nextLeg: {
+                            duration: "約 8 分",
+                            lineColor: "#0d9488",
+                            lineName: "箱根空中纜車 ・ 往大湧谷行"
+                        }
+                    },
+                    {
+                        code: "OH63",
+                        color: "#0d9488",
+                        station: "大湧谷",
+                        status: "中途停留",
+                        statusType: "stop",
+                        fare: "周遊券 PASS",
+                        mapQuery: "https://maps.app.goo.gl/crn436kvtLUXEWAt9",
+                        pois: [
+                            { icon: "ph-egg", color: "text-amber-600", name: "大湧谷黑蛋", query: "大涌谷 黒たまご館" },
+                            { icon: "ph-storefront", color: "text-pink-600", name: "Plaza 大涌谷星野", query: "https://maps.app.goo.gl/JkzUf1yf1GNhXjyX6" }
+                        ],
+                        nextLeg: {
+                            duration: "約 16 分",
+                            lineColor: "#0d9488",
+                            lineName: "箱根空中纜車 ・ 往桃源台港行"
+                        }
+                    },
+                    {
+                        code: "OH65",
+                        color: "#2563eb",
+                        station: "桃源台港",
+                        fare: "周遊券 PASS",
+                        transferNote: "換乘蘆之湖海盜觀光船 (14:30 開船)",
+                        mapQuery: "桃源台港",
+                        nextLeg: {
+                            duration: "約 40 分",
+                            lineColor: "#2563eb",
+                            lineName: "蘆之湖海盜觀光船 (14:30) ・ 往元箱根港行"
+                        }
+                    },
+                    {
+                        code: "OH67",
+                        color: "#9333ea",
+                        station: "元箱根港",
+                        status: "中途停留",
+                        statusType: "stop",
+                        fare: "周遊券 PASS",
+                        mapQuery: "https://maps.app.goo.gl/pBjHZXyu2uzxWFKJ9",
+                        pois: [
+                            { icon: "ph-torii", color: "text-red-500", name: "箱根神社 (水上鳥居)", query: "箱根神社" },
+                            { icon: "ph-bread", color: "text-amber-600", name: "Bakery and Table", query: "Bakery & Table 箱根" }
+                        ],
+                        nextLeg: {
+                            duration: "約 27 分",
+                            lineColor: "#9333ea",
+                            lineName: "【箱根登山バス】R箱根新道線 ・ 往箱根湯本駅行"
+                        }
+                    },
+                    {
+                        code: "OH51",
+                        color: "#ef4444",
+                        station: "箱根湯本駅",
+                        platform: "1/2",
+                        status: "商店街散策",
+                        statusType: "stop",
+                        fare: "周遊券 PASS",
+                        mapQuery: "https://maps.app.goo.gl/Bd8QkRJJK1FCVESW7",
+                        pois: [
+                            { icon: "ph-bowl-food", color: "text-orange-500", name: "日清亭 (手打拉麵)", query: "日清亭 箱根湯本" },
+                            { icon: "ph-cookie", color: "text-pink-500", name: "GRANDE RIVIERE 麵包脆餅", query: "https://maps.app.goo.gl/afe9woGrgZHj4xa48" },
+                            { icon: "ph-fish-simple", color: "text-blue-500", name: "籠屋清次郎 (現炸魚板)", query: "籠屋清次郎" }
+                        ],
+                        nextLeg: {
+                            duration: "約 14 分",
+                            lineColor: "#ef4444",
+                            lineName: "箱根登山線 ・ 往小田原行"
+                        }
+                    },
+                    {
+                        code: "OH47",
+                        color: "#f97316",
+                        station: "小田原",
+                        platform: "6",
+                        fare: "周遊券 PASS",
+                        transferNote: "換乘 JR 東海道本線回飯店",
+                        mapQuery: "https://maps.app.goo.gl/gBVKXkSFXtjBH5R7A",
+                        nextLeg: {
+                            duration: "約 39 分",
+                            lineColor: "#f97316",
+                            lineName: "JR東海道本線 ・ 往小金井行"
+                        }
+                    },
+                    {
+                        code: "JT07",
+                        color: "#f97316",
+                        station: "大船",
+                        status: "目的地",
+                        statusType: "end",
+                        fare: "自小田原 ¥715",
+                        mapQuery: "https://maps.app.goo.gl/oAF76gKTc5nDkpUZ6",
+                        exits: [
+                            { text: "返回大船飯店休息", style: "yellow", query: "https://maps.app.goo.gl/WVGM3ks2P9dq1Fcx5" }
+                        ],
+                        areaMapTitle: "開啟箱根・蘆之湖周邊地圖",
+                        areaMapQuery: "https://maps.app.goo.gl/Bd8QkRJJK1FCVESW7"
+                    }
+                ]
+            },
+            {
+                day: "Day 3",
+                date: "4/7 (三)",
+                title: "鎌倉・江之島海岸電鐵漫遊 ➔ 移宿品川",
+                totalYen: "¥1,113",
+                extraNote: "江之電全線使用 PASS (省 ¥200+220+200+220 = ¥840)｜另備註江之島電扶梯 ¥500",
+                nodes: [
+                    {
+                        code: "JO09",
+                        color: "#0284c7",
+                        station: "大船",
+                        platform: "8",
+                        status: "起點站",
+                        statusType: "start",
+                        mapQuery: "https://maps.app.goo.gl/hxm4BsrVVoJLpSjWA",
+                        nextLeg: {
+                            duration: "約 6 分",
+                            lineColor: "#0284c7",
+                            lineName: "JR橫須賀線 ・ 往逗子行"
+                        }
+                    },
+                    {
+                        code: "EN01",
+                        color: "#16a34a",
+                        station: "鎌倉",
+                        platform: "1",
+                        status: "景點停留",
+                        statusType: "stop",
+                        fare: "自大船 ¥199",
+                        mapQuery: "https://maps.app.goo.gl/KPceBZpare82eGR69",
+                        exits: [
+                            { text: "東口 (小町通・八幡宮)", style: "yellow" },
+                            { text: "西口 (換乘江之電)", style: "pink" }
+                        ],
+                        pois: [
+                            { icon: "ph-torii", color: "text-red-500", name: "鶴岡八幡宮", query: "鶴岡八幡宮" },
+                            { icon: "ph-shopping-bag", color: "text-pink-500", name: "小町通商店街", query: "小町通り 鎌倉" },
+                            { icon: "ph-bird", color: "text-amber-500", name: "豐島屋鴿子餅乾", query: "https://maps.app.goo.gl/jC67o1LVcrSDjopL6" },
+                            { icon: "ph-moon", color: "text-blue-500", name: "鎌倉五郎半月燒", query: "鎌倉五郎本店 小町通り本店" }
+                        ],
+                        nextLeg: {
+                            duration: "約 8 分",
+                            lineColor: "#16a34a",
+                            lineName: "江ノ島電鉄線 ・ 往藤沢行",
+                            fareBadge: "周遊券 PASS"
+                        }
+                    },
+                    {
+                        code: "EN12",
+                        color: "#16a34a",
+                        station: "長谷",
+                        status: "甜點巡禮",
+                        statusType: "stop",
+                        fare: "周遊券 PASS",
+                        mapQuery: "長谷駅 神奈川県",
+                        pois: [
+                            { icon: "ph-coffee", color: "text-amber-700", name: "KANNON COFFEE 大佛可麗餅", query: "KANNON COFFEE kamakura" }
+                        ],
+                        nextLeg: {
+                            duration: "約 12 分",
+                            lineColor: "#16a34a",
+                            lineName: "江ノ島電鉄線 ・ 往藤沢行"
+                        }
+                    },
+                    {
+                        code: "EN08",
+                        color: "#16a34a",
+                        station: "鎌倉高校前",
+                        status: "拍照打卡",
+                        statusType: "stop",
+                        fare: "周遊券 PASS",
+                        mapQuery: "鎌倉高校前駅",
+                        pois: [
+                            { icon: "ph-camera", color: "text-blue-600", name: "鎌倉高校前平交道", query: "鎌倉高校前駅 踏切" }
+                        ],
+                        nextLeg: {
+                            duration: "約 9 分",
+                            lineColor: "#16a34a",
+                            lineName: "江ノ島電鉄線 ・ 往藤沢行"
+                        }
+                    },
+                    {
+                        code: "EN06",
+                        color: "#16a34a",
+                        station: "江ノ島",
+                        platform: "1",
+                        status: "深度遊覽",
+                        statusType: "stop",
+                        fare: "周遊券 PASS",
+                        mapQuery: "江ノ島駅",
+                        exits: [
+                            { text: "電扶梯 ¥500", style: "yellow", query: "https://maps.app.goo.gl/tK9SyTkNk7Vwc1cJ8" }
+                        ],
+                        pois: [
+                            { icon: "ph-storefront", color: "text-orange-500", name: "弁財天仲見世商店街", query: "江の島弁財天仲見世通り" },
+                            { icon: "ph-cookie", color: "text-amber-600", name: "ASAHI 章魚仙貝", query: "https://maps.app.goo.gl/snPECZ1hP4ZsPmqe6" },
+                            { icon: "ph-fish", color: "text-blue-500", name: "Tobiccho 吻仔魚丼", query: "https://maps.app.goo.gl/7BR3UYbnXF5sFyjYA" },
+                            { icon: "ph-torii", color: "text-red-500", name: "江島神社・海蠟燭", query: "江の島シーキャンドル" }
+                        ],
+                        nextLeg: {
+                            duration: "約 15 分",
+                            lineColor: "#16a34a",
+                            lineName: "江ノ島電鉄線 ・ 往藤沢行"
+                        }
+                    },
+                    {
+                        code: "EN01",
+                        color: "#f97316",
+                        station: "藤沢",
+                        platform: "3",
+                        status: "晚餐停留",
+                        statusType: "stop",
+                        fare: "周遊券 PASS",
+                        transferNote: "出站用餐後換乘 JR 東海道本線 (3號月台)",
+                        mapQuery: "https://maps.app.goo.gl/svLEBdVYU3X8MsHQ6",
+                        pois: [
+                            { icon: "ph-bowl-steam", color: "text-red-600", name: "味之古久家 藤澤店", query: "味の古久家 藤沢店" }
+                        ],
+                        nextLeg: {
+                            duration: "約 3 分",
+                            lineColor: "#f97316",
+                            lineName: "JR東海道本線 ・ 往古河行"
+                        }
+                    },
+                    {
+                        code: "JT07",
+                        color: "#f97316",
+                        station: "大船",
+                        platform: "2",
+                        fare: "自藤沢 ¥199",
+                        transferNote: "回大船飯店拿取行李 ➔ 2號月台搭乘 JR 前往品川",
+                        mapQuery: "https://maps.app.goo.gl/J1N8RJvwX791tdVD8",
+                        nextLeg: {
+                            duration: "約 40 分",
+                            lineColor: "#f97316",
+                            lineName: "JR東海道本線 ・ 往小金井行"
+                        }
+                    },
+                    {
+                        code: "JT04",
+                        color: "#f97316",
+                        station: "品川",
+                        platform: "6",
+                        status: "目的地",
+                        statusType: "end",
+                        fare: "自大船 ¥715",
+                        mapQuery: "https://maps.app.goo.gl/ebRCLCbBn5Kd7QAx7",
+                        exits: [
+                            { text: "高輪口 (飯店 Check-in)", style: "yellow", query: "https://maps.app.goo.gl/u97kUDVujyrPd4U7A" }
+                        ],
+                        areaMapTitle: "開啟鎌倉・江之島周邊地圖",
+                        areaMapQuery: "江の島"
+                    }
+                ]
+            },
+            {
+                day: "Day 4",
+                date: "4/8 (四)",
+                title: "淺草雷門・屋形船體驗・上野阿美橫町購物",
+                totalYen: "¥853",
+                extraNote: "屋形船已於台灣預付 (NTD 4,000)",
+                nodes: [
+                    {
+                        code: "KK01",
+                        color: "#e11d48",
+                        station: "品川",
+                        platform: "2",
+                        status: "起點站",
+                        statusType: "start",
+                        mapQuery: "https://maps.app.goo.gl/ebRCLCbBn5Kd7QAx7",
+                        nextLeg: {
+                            duration: "約 23 分",
+                            lineColor: "#e11d48",
+                            lineName: "京急本線普通 直通 都營淺草線 ・ 往青砥行"
+                        }
+                    },
+                    {
+                        code: "A18",
+                        color: "#f59e0b",
+                        station: "浅草",
+                        platform: "2",
+                        status: "景點與遊船",
+                        statusType: "stop",
+                        fare: "自品川 ¥422",
+                        transferNote: "遊覽淺草後，轉乘東京地鐵銀座線",
+                        mapQuery: "https://maps.app.goo.gl/RUmLrcW5SSUihUcF7",
+                        exits: [
+                            { text: "雷門出口 (淺草寺)", style: "yellow" },
+                            { text: "隅田川乘船場 (屋形船)", style: "pink" }
+                        ],
+                        pois: [
+                            { icon: "ph-torii", color: "text-red-600", name: "淺草寺 (雷門)", query: "https://maps.app.goo.gl/HRgERnGG4AqMKAbr9" },
+                            { icon: "ph-storefront", color: "text-orange-500", name: "仲見世通商店街", query: "仲見世通り 浅草" },
+                            { icon: "ph-boat", color: "text-blue-600", name: "隅田川屋形船體驗", query: "https://maps.app.goo.gl/sjisxDL7Mp8GE1DM6" }
+                        ],
+                        nextLeg: {
+                            duration: "約 5 分",
+                            lineColor: "#f59e0b",
+                            lineName: "東京メトロ銀座線 ・ 往渋谷行"
+                        }
+                    },
+                    {
+                        code: "G16",
+                        color: "#65a30d",
+                        station: "上野",
+                        platform: "2 ➔ 3",
+                        status: "購物行程",
+                        statusType: "stop",
+                        fare: "自浅草 ¥178",
+                        transferNote: "購物後由 JR 上野站 3號月台搭乘山手線",
+                        mapQuery: "https://maps.app.goo.gl/F9pGf519g7jcuWVh7",
+                        pois: [
+                            { icon: "ph-tree", color: "text-emerald-600", name: "上野恩賜公園", query: "上野恩賜公園" }
+                        ],
+                        customActionBtn: {
+                            text: "開啟阿美橫町 美食/藥妝攻略地圖",
+                            action: "openMapModal()"
+                        },
+                        nextLeg: {
+                            duration: "約 20 分",
+                            lineColor: "#65a30d",
+                            lineName: "JR山手線外回り ・ 往東京方面行"
+                        }
+                    },
+                    {
+                        code: "JY25",
+                        color: "#65a30d",
+                        station: "品川",
+                        platform: "3",
+                        status: "目的地",
+                        statusType: "end",
+                        fare: "自上野 ¥253",
+                        mapQuery: "https://maps.app.goo.gl/MnRTJ5ZwBL5eWJd8A",
+                        exits: [
+                            { text: "高輪口 (返回品川飯店)", style: "yellow", query: "https://maps.app.goo.gl/u97kUDVujyrPd4U7A" }
+                        ]
+                    }
+                ]
+            },
+            {
+                day: "Day 5",
+                date: "4/9 (五)",
+                title: "千鳥之淵賞櫻・澀谷購物・秋葉原・目黑川夜櫻",
+                totalYen: "¥1,509",
+                extraNote: "東京賞櫻名所巡禮（千鳥之淵、靖國神社、目黑川櫻花）",
+                nodes: [
+                    {
+                        code: "JY25",
+                        color: "#65a30d",
+                        station: "品川",
+                        platform: "3",
+                        status: "起點站",
+                        statusType: "start",
+                        mapQuery: "https://maps.app.goo.gl/ebRCLCbBn5Kd7QAx7",
+                        nextLeg: {
+                            duration: "約 13 分",
+                            lineColor: "#65a30d",
+                            lineName: "JR山手線外回り ・ 往渋谷方面行"
+                        }
+                    },
+                    {
+                        code: "Z01",
+                        color: "#9333ea",
+                        station: "渋谷",
+                        platform: "1 ➔ 2",
+                        fare: "自品川 ¥209",
+                        transferNote: "站內換乘東京地鐵半藏門線 (2號月台)",
+                        mapQuery: "https://maps.app.goo.gl/b2KMyCGwD1oCxFyeA",
+                        nextLeg: {
+                            duration: "約 14 分",
+                            lineColor: "#9333ea",
+                            lineName: "東京メトロ半蔵門線 ・ 往押上行"
+                        }
+                    },
+                    {
+                        code: "Z06",
+                        color: "#9333ea",
+                        station: "九段下",
+                        platform: "4 ➔ 3",
+                        status: "賞櫻名所",
+                        statusType: "stop",
+                        fare: "自渋谷 ¥209",
+                        mapQuery: "九段下駅",
+                        exits: [
+                            { text: "1號出口 (靖國神社)", style: "yellow" },
+                            { text: "2號出口 (千鳥之淵綠道)", style: "pink" }
+                        ],
+                        pois: [
+                            { icon: "ph-torii", color: "text-red-500", name: "靖國神社 (櫻花標本木)", query: "靖国神社" },
+                            { icon: "ph-flower-lotus", color: "text-pink-500", name: "千鳥之淵 (划船賞櫻)", query: "千鳥ヶ淵緑道" }
+                        ],
+                        nextLeg: {
+                            duration: "約 12 分",
+                            lineColor: "#9333ea",
+                            lineName: "東京メトロ半蔵門線 (3號月台) ・ 往長津田行"
+                        }
+                    },
+                    {
+                        code: "JY20",
+                        color: "#65a30d",
+                        station: "渋谷",
+                        platform: "1 ➔ 2",
+                        status: "逛街甜點",
+                        statusType: "stop",
+                        fare: "自九段下 ¥209",
+                        transferNote: "逛街後由 JR 澀谷站 2號月台搭乘山手線",
+                        mapQuery: "https://maps.app.goo.gl/b2KMyCGwD1oCxFyeA",
+                        pois: [
+                            { icon: "ph-smiley", color: "text-blue-500", name: "ShinQ 2F SUN SUN STORE", query: "https://maps.app.goo.gl/AiHtbpqGyt3zR7bE8" },
+                            { icon: "ph-bowl-food", color: "text-amber-500", name: "治一郎布丁 (澀谷店)", query: "治一郎 渋谷スクランブルスクエア店" },
+                            { icon: "ph-gift", color: "text-purple-500", name: "C-Pla 扭蛋", query: "https://maps.app.goo.gl/V4PTqnAkbJWijxVY7" }
+                        ],
+                        nextLeg: {
+                            duration: "約 30 分",
+                            lineColor: "#65a30d",
+                            lineName: "JR山手線内回り ・ 往品川・東京方面行"
+                        }
+                    },
+                    {
+                        code: "H16",
+                        color: "#9ca3af",
+                        station: "秋葉原",
+                        platform: "2 ➔ 1",
+                        status: "點心停留",
+                        statusType: "stop",
+                        fare: "自渋谷 ¥253",
+                        transferNote: "換乘東京地鐵日比谷線 (1號月台)",
+                        mapQuery: "https://maps.app.goo.gl/Ys8dFqorkGpEv2i59",
+                        pois: [
+                            { icon: "ph-cookie", color: "text-amber-600", name: "Cow Cow Kitchen 牛奶派泡芙", query: "COWCOW KITCHEN アトレ秋葉原1店" }
+                        ],
+                        nextLeg: {
+                            duration: "約 24 分",
+                            lineColor: "#9ca3af",
+                            lineName: "東京メトロ日比谷線 ・ 往中目黒行"
+                        }
+                    },
+                    {
+                        code: "H01",
+                        color: "#9ca3af",
+                        station: "中目黒",
+                        platform: "2 ➔ 3",
+                        status: "夜櫻散步",
+                        statusType: "stop",
+                        fare: "自秋葉原 ¥252",
+                        mapQuery: "中目黒駅",
+                        exits: [
+                            { text: "正面出口 (目黑川櫻花並木)", style: "pink" }
+                        ],
+                        pois: [
+                            { icon: "ph-flower", color: "text-pink-500", name: "目黑川櫻花大道", query: "目黒川桜並木" }
+                        ],
+                        nextLeg: {
+                            duration: "約 3 分",
+                            lineColor: "#9ca3af",
+                            lineName: "東京メトロ日比谷線 (3號月台) ・ 往竹ノ塚行"
+                        }
+                    },
+                    {
+                        code: "H02",
+                        color: "#65a30d",
+                        station: "恵比寿",
+                        platform: "2",
+                        fare: "自中目黒 ¥178",
+                        transferNote: "換乘 JR 山手線内回り (2號月台)",
+                        mapQuery: "恵比寿駅",
+                        nextLeg: {
+                            duration: "約 10 分",
+                            lineColor: "#65a30d",
+                            lineName: "JR山手線内回り ・ 往品川方面行"
+                        }
+                    },
+                    {
+                        code: "JY25",
+                        color: "#65a30d",
+                        station: "品川",
+                        platform: "1",
+                        status: "目的地",
+                        statusType: "end",
+                        fare: "自恵比寿 ¥199",
+                        mapQuery: "https://maps.app.goo.gl/ebRCLCbBn5Kd7QAx7",
+                        exits: [
+                            { text: "高輪口 (返回品川飯店)", style: "yellow", query: "https://maps.app.goo.gl/u97kUDVujyrPd4U7A" }
+                        ]
+                    }
+                ]
+            },
+            {
+                day: "Day 6",
+                date: "4/10 (六)",
+                title: "品川 ➔ 成田國際機場第二航廈 ➔ 平安返台",
+                totalYen: "¥0",
+                extraNote: "使用預購之 N'EX 來回車票回程，當日無額外日幣交通費",
+                nodes: [
+                    {
+                        code: "NEX",
+                        color: "#dc2626",
+                        station: "品川",
+                        platform: "13",
+                        status: "起點站",
+                        statusType: "start",
+                        mapQuery: "https://maps.app.goo.gl/ebRCLCbBn5Kd7QAx7",
+                        exits: [
+                            { text: "13號月台 (10:23 準時發車)", style: "yellow" }
+                        ],
+                        nextLeg: {
+                            duration: "約 64 分",
+                            lineColor: "#dc2626",
+                            lineName: "成田特快 N'EX (10:23 ~ 11:27) ・ 往成田空港行",
+                            fareBadge: "來回票 PASS"
+                        }
+                    },
+                    {
+                        code: "NRT",
+                        color: "#0284c7",
+                        station: "成田第二航廈",
+                        subName: "(T2)",
+                        fare: "自品川 PASS (¥0)",
+                        transferNote: "辦理登機手續 ・ 國泰航空 CX451",
+                        mapQuery: "成田国際空港 第2ターミナル",
+                        exits: [
+                            { text: "3F 國際線出境大廳", style: "yellow" },
+                            { text: "免稅店伴手禮採買", style: "pink" }
+                        ],
+                        pois: [
+                            { icon: "ph-gift", color: "text-pink-500", name: "成田二廈免稅店街", query: "成田空港 第2ターミナル 免税店" }
+                        ],
+                        nextLeg: {
+                            duration: "約 3 小時 40 分",
+                            lineColor: "#006564",
+                            lineName: "國泰航空 CX451 (15:45 ~ 18:25) ・ 往台灣桃園",
+                            fareBadge: "來回機票 NTD 17,000"
+                        }
+                    },
+                    {
+                        code: "TPE",
+                        color: "#006564",
+                        station: "桃園第一航廈",
+                        subName: "(T1)",
+                        status: "目的地",
+                        statusType: "end",
+                        mapQuery: "https://maps.app.goo.gl/q1tDCQ4cAUz7skhp9"
+                    }
+                ]
+            }
+        ];
+
+        let currentTab = 0; // 0 ~ 5 對應 Day 1 ~ Day 6, 'budget' 對應預算表
+
+        // 開啟 Google Maps 輔助函式 (支援直接開啟 http/https 網址或搜尋關鍵字)
+        function openMap(query) {
+            if (query.startsWith('http://') || query.startsWith('https://')) {
+                window.open(query, '_blank', 'noopener,noreferrer');
+            } else {
+                const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+                window.open(url, '_blank', 'noopener,noreferrer');
+            }
+        }
+
+        // 渲染頂部 Tabs
+        function renderTabs() {
+            const tabContainer = document.getElementById('day-tabs');
+            let html = '';
+            itineraryData.forEach((item, index) => {
+                const isActive = currentTab === index;
+                html += `
+                    <button onclick="switchTab(${index})" 
+                        class="flex-shrink-0 px-3.5 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                            isActive 
+                            ? 'bg-gray-900 text-white shadow-sm' 
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }">
+                        <span>${item.day}</span>
+                        <span class="${isActive ? 'text-gray-300' : 'text-gray-400'} font-normal">${item.date.split(' ')[0]}</span>
+                    </button>
+                `;
+            });
+            tabContainer.innerHTML = html;
+        }
+
+        // 切換分頁
+        function switchTab(tabIndex) {
+            currentTab = tabIndex;
+            renderTabs();
+
+            const daySummary = document.getElementById('day-summary');
+            const itineraryContainer = document.getElementById('itinerary-container');
+            const budgetContainer = document.getElementById('budget-container');
+
+            if (tabIndex === 'budget') {
+                daySummary.classList.add('hidden');
+                itineraryContainer.classList.add('hidden');
+                budgetContainer.classList.remove('hidden');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            }
+
+            daySummary.classList.remove('hidden');
+            itineraryContainer.classList.remove('hidden');
+            budgetContainer.classList.add('hidden');
+
+            renderDayContent(tabIndex);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // 渲染單日行程 (100% 還原上傳圖片之視覺架構)
+        function renderDayContent(index) {
+            const data = itineraryData[index];
+            
+            // 1. 更新當日摘要
+            const summaryEl = document.getElementById('day-summary');
+            summaryEl.innerHTML = `
+                <div class="pr-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded-md border border-orange-200">${data.day} ・ ${data.date}</span>
+                        <h2 class="text-sm sm:text-base font-bold text-gray-900">${data.title}</h2>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1 leading-relaxed">${data.extraNote}</p>
+                </div>
+                <div class="text-right flex-shrink-0 bg-gray-50 px-3 py-2 rounded-xl border border-gray-200/80">
+                    <span class="text-[11px] text-gray-500 block">當日自費總支出</span>
+                    <span class="text-base sm:text-lg font-black text-gray-900">${data.totalYen}</span>
+                </div>
+            `;
+
+            // 2. 渲染路線節點
+            const container = document.getElementById('itinerary-container');
+            let html = '';
+
+            data.nodes.forEach((node, idx) => {
+                const isLast = idx === data.nodes.length - 1;
+
+                // 狀態標籤配色 (起點站深黑、目的地橘底、中途停留藍綠底)
+                let statusBadgeHtml = '';
+                if (node.status) {
+                    if (node.statusType === 'start') {
+                        statusBadgeHtml = `<span class="bg-[#222222] text-white text-xs font-bold px-2.5 py-0.5 rounded-md">${node.status}</span>`;
+                    } else if (node.statusType === 'end') {
+                        statusBadgeHtml = `<span class="bg-[#fff3e6] text-[#d9531e] text-xs font-bold px-2.5 py-0.5 rounded-md">${node.status}</span>`;
+                    } else {
+                        statusBadgeHtml = `<span class="bg-blue-50 text-blue-700 text-xs font-bold px-2.5 py-0.5 rounded-md">${node.status}</span>`;
+                    }
+                }
+
+                // 月台編號標籤 (例如 P1, P3)
+                const platformHtml = node.platform 
+                    ? `<span class="bg-[#f2f3f5] text-gray-600 text-xs font-bold px-2 py-0.5 rounded-md border border-gray-200/80">P${node.platform}</span>` 
+                    : '';
+
+                // 副站名 (例如 (原宿))
+                const subNameHtml = node.subName 
+                    ? `<span class="text-gray-500 font-normal text-base ml-0.5">${node.subName}</span>` 
+                    : '';
+
+                // 車資標籤 (例如 自人形町 ¥209)
+                const fareHtml = node.fare 
+                    ? `<span class="bg-[#f3f4f6] text-gray-700 text-xs font-bold px-2.5 py-1 rounded-md ml-auto">${node.fare}</span>` 
+                    : '';
+
+                // 站內換乘灰底提示框
+                const transferBoxHtml = node.transferNote ? `
+                    <div class="mt-2.5 bg-[#f7f8fa] border border-gray-100 rounded-xl px-3.5 py-2.5 flex items-center gap-2 text-xs sm:text-sm text-gray-700 font-medium">
+                        <i class="ph-bold ph-footprints text-gray-400 text-base flex-shrink-0"></i>
+                        <span>${node.transferNote}</span>
+                    </div>
+                ` : '';
+
+                // 出口標籤 (黃色與粉紅色樣式，若含有 query 則渲染為可點擊按鈕)
+                let exitsHtml = '';
+                if (node.exits && node.exits.length > 0) {
+                    exitsHtml = `<div class="flex flex-wrap gap-2 mt-2.5">`;
+                    node.exits.forEach(ex => {
+                        const isYellow = ex.style === 'yellow';
+                        const baseClasses = isYellow
+                            ? 'bg-[#fdf8e6] text-[#854d0e] border-[#faecc5]'
+                            : 'bg-[#fceef2] text-[#9d174d] border-[#f9d8e2]';
+
+                        if (ex.query) {
+                            exitsHtml += `
+                                <button onclick="openMap('${ex.query}')" class="inline-flex items-center gap-1 ${baseClasses} hover:opacity-80 active:scale-[0.98] transition text-xs font-bold px-2.5 py-1 rounded-md border shadow-sm cursor-pointer">
+                                    <i class="ph-bold ph-door-open"></i> ${ex.text}
+                                    <i class="ph-bold ph-arrow-square-out text-[11px] ml-0.5"></i>
+                                </button>
+                            `;
+                        } else {
+                            exitsHtml += `
+                                <span class="inline-flex items-center gap-1 ${baseClasses} text-xs font-bold px-2.5 py-1 rounded-md border">
+                                    <i class="ph-bold ph-door-open"></i> ${ex.text}
+                                </span>
+                            `;
+                        }
+                    });
+                    exitsHtml += `</div>`;
+                }
+
+                // 景點與美食雙欄網格區 (點擊可開啟地圖或觸發自訂 Modal)
+                let poisHtml = '';
+                if (node.pois && node.pois.length > 0) {
+                    poisHtml = `
+                        <div class="mt-3 bg-[#f7f8fa] p-3 rounded-2xl border border-gray-100">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    `;
+                    node.pois.forEach(poi => {
+                        const clickHandler = poi.action ? poi.action : `openMap('${poi.query}')`;
+                        poisHtml += `
+                            <button onclick="${clickHandler}" 
+                                class="bg-white hover:bg-orange-50/50 active:scale-[0.99] transition border border-gray-200/90 rounded-xl py-2.5 px-3 flex items-center justify-center gap-2 text-xs sm:text-sm font-bold text-gray-700 shadow-sm">
+                                <i class="ph-bold ${poi.icon} ${poi.color} text-base"></i>
+                                <span class="truncate">${poi.name}</span>
+                            </button>
+                        `;
+                    });
+                    poisHtml += `
+                            </div>
+                        </div>
+                    `;
+                }
+
+                // 專屬互動攻略地圖按鈕 (例如：上野阿美橫町美食/藥妝攻略地圖)
+                const customActionBtnHtml = node.customActionBtn ? `
+                    <div class="mt-2.5">
+                        <button onclick="${node.customActionBtn.action}" 
+                            class="tap-effect w-full bg-gradient-to-r from-orange-500 to-amber-600 text-white text-xs sm:text-sm font-bold py-2.5 px-4 rounded-xl flex items-center justify-center gap-1.5 shadow-sm hover:from-orange-600 hover:to-amber-700 transition-colors">
+                            <i class="ph-bold ph-map-pin-line text-base"></i>
+                            <span>${node.customActionBtn.text}</span>
+                        </button>
+                    </div>
+                ` : '';
+
+                // 底部亮橘色周邊地圖大按鈕
+                const areaMapBtnHtml = node.areaMapTitle ? `
+                    <div class="mt-4">
+                        <button onclick="openMap('${node.areaMapQuery}')" 
+                            class="w-full bg-[#ea6c15] hover:bg-[#d85e0d] active:scale-[0.99] transition text-white font-bold py-3.5 px-4 rounded-2xl shadow-md flex items-center justify-center gap-2 text-sm sm:text-base">
+                            <i class="ph-bold ph-map-trifold text-lg"></i>
+                            <span>${node.areaMapTitle}</span>
+                        </button>
+                    </div>
+                ` : '';
+
+                // 下一段交通路線與左側時間膠囊
+                let nextLegHtml = '';
+                let durationPillHtml = '';
+                if (node.nextLeg) {
+                    durationPillHtml = `
+                        <div class="my-3 z-10 bg-white border border-gray-200 text-gray-600 text-[11px] font-bold px-2.5 py-0.5 rounded-full shadow-sm whitespace-nowrap">
+                            ${node.nextLeg.duration}
+                        </div>
+                    `;
+                    const legFareBadge = node.nextLeg.fareBadge 
+                        ? `<span class="ml-2 bg-amber-50 text-amber-800 border border-amber-200 text-[11px] font-bold px-2 py-0.5 rounded">${node.nextLeg.fareBadge}</span>` 
+                        : '';
+
+                    nextLegHtml = `
+                        <div class="mt-3 mb-4 flex items-center flex-wrap gap-y-1 text-xs sm:text-sm font-bold text-gray-600">
+                            <span class="w-2.5 h-2.5 rounded-full mr-2 flex-shrink-0" style="background-color: ${node.nextLeg.lineColor}"></span>
+                            <span>${node.nextLeg.lineName}</span>
+                            ${legFareBadge}
+                        </div>
+                    `;
+                }
+
+                // 組裝單一車站區塊 (左側圓形徽章+垂直虛線 / 右側車站資訊)
+                html += `
+                    <div class="flex items-stretch">
+                        <!-- 左側時間軸與圓形車站代碼 -->
+                        <div class="w-16 sm:w-20 flex-shrink-0 flex flex-col items-center relative mr-2 sm:mr-3">
+                            <!-- 車站圓形徽章 -->
+                            <div class="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-md ring-4 ring-white z-10 flex-shrink-0" 
+                                 style="background-color: ${node.color}">
+                                ${node.code}
+                            </div>
+                            <!-- 連接虛線與時間膠囊 -->
+                            ${!isLast ? `
+                                <div class="flex-grow w-0.5 timeline-line flex flex-col items-center justify-center py-2">
+                                    ${durationPillHtml}
+                                </div>
+                            ` : `
+                                <div class="flex-grow w-0.5 timeline-line opacity-40"></div>
+                            `}
+                        </div>
+
+                        <!-- 右側車站詳細內容 -->
+                        <div class="flex-grow pb-6 pt-1 min-w-0">
+                            <!-- 第一列：站名、月台、起訖標籤、導航按鈕/車資 -->
+                            <div class="flex items-center flex-wrap gap-1.5 sm:gap-2">
+                                <h3 class="text-lg sm:text-xl font-black text-gray-900 tracking-tight">
+                                    ${node.station}${subNameHtml}
+                                </h3>
+                                ${platformHtml}
+                                ${statusBadgeHtml}
+                                ${fareHtml}
+                                <button onclick="openMap('${node.mapQuery}')" 
+                                    title="在 Google Maps 開啟此車站"
+                                    class="${node.fare ? '' : 'ml-auto'} w-8 h-8 rounded-full bg-[#f0f4ff] hover:bg-blue-100 text-blue-600 flex items-center justify-center transition shadow-sm flex-shrink-0">
+                                    <i class="ph-bold ph-paper-plane-tilt text-sm"></i>
+                                </button>
+                            </div>
+
+                            ${transferBoxHtml}
+                            ${exitsHtml}
+                            ${poisHtml}
+                            ${customActionBtnHtml}
+                            ${nextLegHtml}
+                            ${areaMapBtnHtml}
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // ================= 阿美橫町互動地圖邏輯 (整合自 5Ameya.html) =================
+        const ameyoPlaces = [
+            { id: 1, type: "food", name: "肉の大山 (肉之大山)", category: "炸肉餅 / 居酒屋", price: "¥200 - ¥1,000", desc: "超人氣排隊名店！必吃外酥內多汁的「和牛炸肉餅」，外帶區超便宜，站在門口配啤酒吃超爽快。", lat: 35.711225, lng: 139.774577, icon: "fa-drumstick-bite", color: "text-amber-700", bg: "bg-amber-100", link: "https://maps.app.goo.gl/UL13uiiNinC2Yyy26" },
+            { id: 2, type: "food", name: "名代 宇奈とと (上野店)", category: "鰻魚飯", price: "¥590 - ¥1,500", desc: "CP值爆表的平價鰻魚飯！只要銅板價就能吃到炭火直烤、香氣四溢的鰻魚丼，經常大排長龍。", lat: 35.711850, lng: 139.774850, icon: "fa-bowl-rice", color: "text-orange-700", bg: "bg-orange-100", link: "https://maps.app.goo.gl/4aABCjaVcnw6kEeC8" },
+            { id: 3, type: "food", name: "みなとや (Minatoya)", category: "海鮮丼 / 章魚燒", price: "¥500 - ¥1,500", desc: "平價大碗的海鮮丼飯，旁邊還有賣熱騰騰的鐵板章魚燒 (4顆只要200多日幣)，是街頭小吃代表。", lat: 35.710468, lng: 139.774438, icon: "fa-fish", color: "text-blue-600", bg: "bg-blue-50", link: "https://maps.app.goo.gl/fgHnH8nDkzi6p1VQA" },
+            { id: 4, type: "food", name: "山家豬排 (とんかつ山家)", category: "炸豬排定食", price: "¥900 - ¥1,500", desc: "上野超人氣高CP值炸豬排！外皮金黃酥脆、豬肉厚實多汁，附上滿滿高麗菜絲與蜆仔味噌湯，排隊也必吃。", lat: 35.709620, lng: 139.774230, icon: "fa-utensils", color: "text-amber-700", bg: "bg-amber-100", link: "https://maps.app.goo.gl/8Vo5iD3UpyYqyw847" },
+            { id: 8, type: "food", name: "麵屋武藏 武骨相傳", category: "沾麵 / 拉麵", price: "¥1,000 - ¥1,500", desc: "知名拉麵店的分店。主打超濃郁的豚骨魚介沾麵，以及巨大厚實、入口即化的炙烤叉燒肉，份量十足。", lat: 35.711510, lng: 139.774920, icon: "fa-bowl-food", color: "text-yellow-700", bg: "bg-yellow-100", link: "https://maps.app.goo.gl/oSxDMPcoWtiewkYTA" },
+            { id: 10, type: "food", name: "モーゼスさんのケバブ", category: "土耳其沙威瑪", price: "¥600 - ¥1,000", desc: "異國風情的代表！土耳其大叔熱情叫賣的沙威瑪，肉量給得超級豪邁，醬汁非常夠味。", lat: 35.710200, lng: 139.774550, icon: "fa-hotdog", color: "text-orange-600", bg: "bg-orange-100", link: "https://maps.app.goo.gl/g4MqiexVaCKUwj1j7" },
+            { id: 11, type: "food", name: "二木の菓子 (第一營業所)", category: "伴手禮 / 零食", price: "¥500 - ¥3,000", desc: "雖然不是餐廳，但絕對是吃貨必逛！免稅超巨大零食量販店，種類多到眼花撩亂，買伴手禮聖地。", lat: 35.709048, lng: 139.774457, icon: "fa-cookie", color: "text-amber-800", bg: "bg-amber-100", link: "https://maps.app.goo.gl/MFSuq3vpys75ddFT6" },
+            { id: 12, type: "drugstore", name: "OS Drug (OSドラッグ)", category: "平價藥妝", desc: "【現金結帳最便宜】阿美橫町內公認價格最殺的藥妝店！雖然不能免稅且只能付現，但商品定價通常比免稅後還便宜。", lat: 35.710500, lng: 139.774380, icon: "fa-pills", color: "text-teal-700", bg: "bg-teal-50", link: "https://maps.app.goo.gl/cRcXm5sjdfVoz5GQ6" },
+            { id: 13, type: "drugstore", name: "松本清 (マツモトキヨシ Part1店)", category: "大型藥妝 / 免稅", desc: "【品項最齊全】超大型連鎖藥妝，提供免稅服務。這裡的保養品、化妝品種類最為齊全，適合一次買齊。", lat: 35.710150, lng: 139.774400, icon: "fa-prescription-bottle-medical", color: "text-blue-700", bg: "bg-blue-50", link: "https://maps.app.goo.gl/aeBC723ScoJXVyba7" },
+            { id: 14, type: "drugstore", name: "大國藥妝 (ダイコクドラッグ)", category: "平價藥妝 / 零食", desc: "【零食藥品雙拼】除了藥品外，這裡賣的日用品和零食也非常便宜！店內常常有會說中文的店員，提供免稅。", lat: 35.709500, lng: 139.774500, icon: "fa-capsules", color: "text-indigo-700", bg: "bg-indigo-50", link: "https://maps.app.goo.gl/xzW1csFgrtvDmqX7A" },
+            { id: 15, type: "drugstore", name: "SUNDRUG (サンドラッグ)", category: "人氣藥妝 / 免稅", desc: "【促銷活動多】知名連鎖店，店面明亮好逛，價格非常有競爭力，偶爾會有特定商品破盤價，提供免稅服務。", lat: 35.710900, lng: 139.774450, icon: "fa-bag-shopping", color: "text-emerald-700", bg: "bg-emerald-50", link: "https://maps.app.goo.gl/8RwEUtFJizCMyx8d6" }
+        ];
+
+        let currentFilter = 'all';
+        let currentMarkers = {};
+        const ameyokoCenter = [35.7106, 139.7745];
+        let map = null;
+
+        function initAmeyoMap() {
+            if (map) return;
+            map = L.map('map', { zoomControl: false }).setView(ameyokoCenter, 17);
+            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>',
+                maxZoom: 20
+            }).addTo(map);
+            L.control.zoom({ position: 'topright' }).addTo(map);
+            renderAmeyoData();
+        }
+
+        function getHexColor(colorClass) {
+            const colors = {
+                'text-amber-700': '#B45309', 'text-amber-800': '#92400E',
+                'text-orange-600': '#EA580C', 'text-orange-700': '#C2410C',
+                'text-blue-600': '#2563EB', 'text-blue-700': '#1D4ED8',
+                'text-cyan-700': '#0E7490', 'text-red-700': '#B91C1C',
+                'text-emerald-700': '#047857', 'text-purple-700': '#6D28D9',
+                'text-yellow-700': '#A16207', 'text-rose-700': '#BE123C',
+                'text-teal-700': '#0F766E', 'text-indigo-700': '#4338CA'
+            };
+            return colors[colorClass] || '#B45309';
+        }
+
+        const createCustomIcon = (colorClass) => {
+            const hexColor = getHexColor(colorClass);
+            return L.divIcon({
+                className: 'custom-pin',
+                html: `<div style="background-color: ${hexColor}; width: 26px; height: 26px; border-radius: 50%; border: 3px solid #FEF3C7; box-shadow: 0 4px 6px rgba(120,53,15,0.3);"></div>`,
+                iconSize: [26, 26], iconAnchor: [13, 13], popupAnchor: [0, -13]
+            });
+        };
+
+        function renderAmeyoData() {
+            if (!map) return;
+            const listContainer = document.getElementById('restaurant-list');
+            const counterText = document.getElementById('list-counter');
+
+            for (let id in currentMarkers) map.removeLayer(currentMarkers[id]);
+            currentMarkers = {};
+            listContainer.innerHTML = '';
+
+            const filteredPlaces = ameyoPlaces.filter(p => currentFilter === 'all' || p.type === currentFilter);
+            const filterName = currentFilter === 'all' ? '全部' : (currentFilter === 'food' ? '美食' : '藥妝');
+            counterText.innerHTML = `<i class="fa-solid fa-map-pin mr-1 text-amber-600"></i> 顯示${filterName} (${filteredPlaces.length})`;
+
+            filteredPlaces.forEach(place => {
+                const marker = L.marker([place.lat, place.lng], { icon: createCustomIcon(place.color) }).addTo(map);
+                
+                const pricePopupHtml = (place.type === 'food' && place.price) 
+                    ? `<span class="text-xs font-bold text-orange-700 bg-orange-50 px-1.5 py-0.5 rounded border border-orange-100"><i class="fa-solid fa-yen-sign mr-0.5"></i>${place.price}</span>` 
+                    : `<span class="text-xs font-bold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200"><i class="fa-solid fa-basket-shopping mr-0.5"></i> 必逛</span>`;
+
+                const popupContent = `
+                    <div class="bg-stone-50">
+                        <div class="${place.bg} px-3 py-2 border-b border-amber-100 flex items-center gap-2">
+                            <div class="w-6 h-6 rounded-full bg-white flex items-center justify-center ${place.color} shadow-sm text-xs border border-white"><i class="fa-solid ${place.icon}"></i></div>
+                            <h3 class="font-bold text-sm text-stone-800 leading-tight">${place.name}</h3>
+                        </div>
+                        <div class="p-3">
+                            <div class="flex justify-between items-center mb-2">
+                                <span class="text-xs text-stone-600 bg-stone-200/60 px-2 py-0.5 rounded font-medium">${place.category}</span>
+                                ${pricePopupHtml}
+                            </div>
+                            <p class="text-xs text-stone-600 mb-3 leading-relaxed">${place.desc}</p>
+                            <button onclick="navigate('${place.link}')" class="w-full bg-amber-800 text-orange-50 text-xs font-bold py-1.5 rounded-md hover:bg-amber-900 transition flex items-center justify-center gap-1.5 shadow-sm border border-amber-900 tap-effect">
+                                <i class="fa-solid fa-location-arrow"></i> 導航
+                            </button>
+                        </div>
+                    </div>`;
+                
+                marker.bindPopup(popupContent, { className: 'custom-popup' });
+                currentMarkers[place.id] = marker;
+
+                const listItem = document.createElement('div');
+                listItem.className = `bg-white/95 backdrop-blur-sm rounded-xl shadow-sm border border-amber-100/60 p-3 cursor-pointer hover:shadow-md hover:border-amber-300 transition active:scale-[0.98] flex flex-col gap-2 relative overflow-hidden h-auto ${place.type === 'drugstore' ? 'border-l-4 border-l-yellow-500' : ''}`;
+                listItem.onclick = () => focusPlace(place.id);
+                
+                const priceListHtml = (place.type === 'food' && place.price)
+                    ? `<div class="text-xs font-bold text-orange-700 mb-1 flex items-center gap-1"><span class="bg-orange-50 text-orange-700 px-1.5 py-0.5 rounded-sm border border-orange-100/50"><i class="fa-solid fa-yen-sign mr-0.5"></i>均消: ${place.price}</span></div>` : ``;
+
+                listItem.innerHTML = `
+                    <div class="flex items-start gap-2.5">
+                        <div class="w-10 h-10 rounded-full ${place.bg} ${place.color} flex items-center justify-center flex-shrink-0 text-lg shadow-inner border-2 border-white mt-0.5"><i class="fa-solid ${place.icon}"></i></div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex justify-between items-start mb-1 gap-1">
+                                <h3 class="font-bold text-stone-800 text-sm leading-tight">${place.name}</h3>
+                                <span class="text-xs bg-stone-100 text-stone-600 px-1.5 py-0.5 rounded font-medium whitespace-nowrap self-start border border-stone-200">${place.category}</span>
+                            </div>
+                            ${priceListHtml}
+                            <p class="text-xs text-stone-500 leading-relaxed mt-1">${place.desc}</p>
+                        </div>
+                    </div>
+                    <div class="flex justify-end border-t border-stone-100 pt-2 mt-1.5">
+                        <button onclick="navigateEvent(event, '${place.link}')" class="flex items-center gap-1.5 bg-amber-800 text-orange-50 px-4 py-1.5 rounded-lg text-xs font-bold hover:bg-amber-900 transition shadow-sm border border-amber-900 tap-effect">
+                            <i class="fa-solid fa-map-location-dot"></i> 導航
+                        </button>
+                    </div>`;
+                listContainer.appendChild(listItem);
+            });
+
+            const footerNote = document.createElement('div');
+            footerNote.className = "text-center pt-5 pb-2 mt-2 text-xs text-stone-500/80 border-t border-stone-200/50";
+            footerNote.innerHTML = `<p>資料統整僅供參考，實際情形以現場為主</p>`;
+            listContainer.appendChild(footerNote);
+        }
+
+        function setFilter(type) {
+            currentFilter = type;
+            const activeClass = "flex-1 py-2.5 text-xs font-bold text-amber-800 border-b-2 border-amber-800 transition flex items-center justify-center gap-1.5 bg-orange-50/60 tap-effect";
+            const inactiveClass = "flex-1 py-2.5 text-xs font-bold text-stone-500 border-b-2 border-transparent hover:text-amber-700 hover:bg-orange-50/40 transition flex items-center justify-center gap-1.5 tap-effect";
+            
+            ['all', 'food', 'drugstore'].forEach(t => document.getElementById(`tab-${t}`).className = inactiveClass);
+            document.getElementById(`tab-${type}`).className = activeClass;
+            
+            renderAmeyoData();
+            centerMap();
+        }
+
+        function focusPlace(id) {
+            const place = ameyoPlaces.find(p => p.id === id);
+            const marker = currentMarkers[id];
+            if (!marker || !map) return;
+            map.flyTo([place.lat - 0.0006, place.lng], 18, { duration: 0.8 });
+            setTimeout(() => marker.openPopup(), 800);
+        }
+
+        function centerMap() {
+            if (!map) return;
+            map.flyTo(ameyokoCenter, 17, { duration: 0.8 });
+            map.closePopup();
+        }
+
+        function navigateEvent(e, url) { e.stopPropagation(); navigate(url); }
+        function navigate(url) { if (url) window.open(url, '_blank', 'noopener,noreferrer'); }
+
+        function openMapModal() {
+            const ameyoMapModal = document.getElementById('ameyo-map-modal');
+            const ameyoMapContent = document.getElementById('ameyo-map-content');
+            ameyoMapModal.classList.remove('hidden');
+            initAmeyoMap();
+            setTimeout(() => {
+                ameyoMapModal.classList.remove('opacity-0');
+                ameyoMapContent.classList.remove('scale-95');
+                if (map) map.invalidateSize();
+            }, 10);
+        }
+
+        function closeMapModal() {
+            const ameyoMapModal = document.getElementById('ameyo-map-modal');
+            const ameyoMapContent = document.getElementById('ameyo-map-content');
+            ameyoMapModal.classList.add('opacity-0');
+            ameyoMapContent.classList.add('scale-95');
+            setTimeout(() => ameyoMapModal.classList.add('hidden'), 300);
+        }
+
+        // 初始化載入 Day 1
+        window.onload = function() {
+            switchTab(0);
+        };
+    </script>
+</body>
+</html>
