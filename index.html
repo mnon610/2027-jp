@@ -195,7 +195,7 @@
                         </div>
                         <div class="text-right">
                             <span class="font-bold text-emerald-700 block">¥ 6,000</span>
-                            <span class="text-xs text-gray-400">实际搭乘扣款約 ¥4,905</span>
+                            <span class="text-xs text-gray-400">實際搭乘扣款約 ¥4,905</span>
                         </div>
                     </div>
                 </div>
@@ -226,7 +226,7 @@
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
                         <div class="text-xs text-gray-500">Day 4 (4/8)</div>
                         <div class="font-bold text-gray-900 text-base mt-0.5">¥ 853</div>
-                        <div class="text-[11px] text-gray-400">淺草・上野地鐵JR</div>
+                        <div class="text-[11px] text-gray-400">淺草・上野地鐵與JR</div>
                     </div>
                     <div class="bg-gray-50 p-3 rounded-xl border border-gray-100">
                         <div class="text-xs text-gray-500">Day 5 (4/9)</div>
@@ -306,7 +306,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
 
     <script>
-        // 完整行程資料庫 (嚴格依據 2027JP.pdf 內容建構並轉化為地鐵導航視覺格式)
+        // 完整行程資料庫 (嚴格依據官方路線顏色與「出發路線之車站編號」建構)
         const itineraryData = [
             {
                 day: "Day 1",
@@ -316,28 +316,28 @@
                 extraNote: "台灣端支出：高鐵 NTD 540 + 機捷 NTD 35 + N'EX來回 NTD 1,200｜成田二廈儲值 Manaca ¥6,000",
                 nodes: [
                     {
-                        code: "THSR",
-                        color: "#e65100",
+                        code: "08",
+                        color: "#F37021",
                         station: "台中高鐵站",
                         status: "起點站",
                         statusType: "start",
                         mapQuery: "https://maps.app.goo.gl/PQ3UQFrCVJfVsCBk7",
                         nextLeg: {
                             duration: "約 40 分",
-                            lineColor: "#e65100",
+                            lineColor: "#F37021",
                             lineName: "台灣高鐵 (AM 09:00 發車) ・ 往桃園站",
                             fareBadge: "NTD 540"
                         }
                     },
                     {
                         code: "A18",
-                        color: "#7e57c2",
+                        color: "#8246AF",
                         station: "高鐵桃園站",
                         transferNote: "站內換乘桃園機場捷運 (AM 09:47 發車)",
                         mapQuery: "https://maps.app.goo.gl/KTfrqzi9p1QZjzWN6",
                         nextLeg: {
                             duration: "約 20 分",
-                            lineColor: "#7e57c2",
+                            lineColor: "#8246AF",
                             lineName: "桃園機場捷運 ・ 往第一航廈",
                             fareBadge: "NTD 35"
                         }
@@ -357,22 +357,22 @@
                         }
                     },
                     {
-                        code: "NRT",
-                        color: "#dc2626",
+                        code: "JO36",
+                        color: "#E21F26",
                         station: "成田第二航廈",
                         platform: "1",
                         transferNote: "入境領取車票 ・ Manaca IC卡儲值 ¥6,000",
                         mapQuery: "https://maps.app.goo.gl/Za9jjpfzMWsg3PAx7",
                         nextLeg: {
                             duration: "約 2 小時",
-                            lineColor: "#dc2626",
+                            lineColor: "#E21F26",
                             lineName: "成田特快 N'EX (19:53 ~ 21:41) ・ 往大船行",
                             fareBadge: "NTD 1,200 (N'EX來回)"
                         }
                     },
                     {
-                        code: "OFN",
-                        color: "#f97316",
+                        code: "JO09",
+                        color: "#E21F26",
                         station: "大船",
                         platform: "7",
                         status: "目的地",
@@ -398,7 +398,7 @@
                 nodes: [
                     {
                         code: "JT07",
-                        color: "#f97316",
+                        color: "#F68B1E",
                         station: "大船",
                         platform: "3",
                         status: "起點站",
@@ -406,13 +406,13 @@
                         mapQuery: "https://maps.app.goo.gl/oAF76gKTc5nDkpUZ6",
                         nextLeg: {
                             duration: "約 41 分",
-                            lineColor: "#f97316",
+                            lineColor: "#F68B1E",
                             lineName: "JR東海道本線 (08:25 發車) ・ 往熱海行"
                         }
                     },
                     {
                         code: "OH47",
-                        color: "#ef4444",
+                        color: "#F04A00",
                         station: "小田原",
                         platform: "3 ➔ 11",
                         fare: "自大船 ¥715",
@@ -420,14 +420,14 @@
                         mapQuery: "https://maps.app.goo.gl/gBVKXkSFXtjBH5R7A",
                         nextLeg: {
                             duration: "約 15 分",
-                            lineColor: "#ef4444",
+                            lineColor: "#F04A00",
                             lineName: "箱根登山線 ・ 往箱根湯本行",
                             fareBadge: "周遊券 PASS"
                         }
                     },
                     {
                         code: "OH51",
-                        color: "#ef4444",
+                        color: "#F04A00",
                         station: "箱根湯本",
                         platform: "3",
                         fare: "周遊券 PASS",
@@ -435,39 +435,39 @@
                         mapQuery: "https://maps.app.goo.gl/Bd8QkRJJK1FCVESW7",
                         nextLeg: {
                             duration: "約 40 分",
-                            lineColor: "#ef4444",
+                            lineColor: "#F04A00",
                             lineName: "箱根登山鐵路 ・ 往強羅行"
                         }
                     },
                     {
                         code: "OH57",
-                        color: "#0284c7",
+                        color: "#F04A00",
                         station: "強羅",
                         fare: "周遊券 PASS",
                         transferNote: "換乘箱根登山纜車 (Cable Car)",
                         mapQuery: "https://maps.app.goo.gl/W56WH8hUZMHvY9aX9",
                         nextLeg: {
                             duration: "約 11 分",
-                            lineColor: "#0284c7",
+                            lineColor: "#F04A00",
                             lineName: "箱根登山纜車 ・ 往早雲山行"
                         }
                     },
                     {
                         code: "OH62",
-                        color: "#0d9488",
+                        color: "#0078C8",
                         station: "早雲山",
                         fare: "周遊券 PASS",
                         transferNote: "換乘箱根空中纜車 (Ropeway)",
                         mapQuery: "https://maps.app.goo.gl/gNnkSYWL5BXqdHEo9",
                         nextLeg: {
                             duration: "約 8 分",
-                            lineColor: "#0d9488",
+                            lineColor: "#0078C8",
                             lineName: "箱根空中纜車 ・ 往大湧谷行"
                         }
                     },
                     {
                         code: "OH63",
-                        color: "#0d9488",
+                        color: "#0078C8",
                         station: "大湧谷",
                         status: "中途停留",
                         statusType: "stop",
@@ -479,26 +479,26 @@
                         ],
                         nextLeg: {
                             duration: "約 16 分",
-                            lineColor: "#0d9488",
+                            lineColor: "#0078C8",
                             lineName: "箱根空中纜車 ・ 往桃源台港行"
                         }
                     },
                     {
                         code: "OH65",
-                        color: "#2563eb",
+                        color: "#1B499F",
                         station: "桃源台港",
                         fare: "周遊券 PASS",
                         transferNote: "換乘蘆之湖海盜觀光船 (14:30 開船)",
                         mapQuery: "桃源台港",
                         nextLeg: {
                             duration: "約 40 分",
-                            lineColor: "#2563eb",
+                            lineColor: "#1B499F",
                             lineName: "蘆之湖海盜觀光船 (14:30) ・ 往元箱根港行"
                         }
                     },
                     {
                         code: "OH67",
-                        color: "#9333ea",
+                        color: "#7E2D8E",
                         station: "元箱根港",
                         status: "中途停留",
                         statusType: "stop",
@@ -510,13 +510,13 @@
                         ],
                         nextLeg: {
                             duration: "約 27 分",
-                            lineColor: "#9333ea",
+                            lineColor: "#7E2D8E",
                             lineName: "【箱根登山バス】R箱根新道線 ・ 往箱根湯本駅行"
                         }
                     },
                     {
                         code: "OH51",
-                        color: "#ef4444",
+                        color: "#F04A00",
                         station: "箱根湯本駅",
                         platform: "1/2",
                         status: "商店街散策",
@@ -530,13 +530,13 @@
                         ],
                         nextLeg: {
                             duration: "約 14 分",
-                            lineColor: "#ef4444",
+                            lineColor: "#F04A00",
                             lineName: "箱根登山線 ・ 往小田原行"
                         }
                     },
                     {
-                        code: "OH47",
-                        color: "#f97316",
+                        code: "JT16",
+                        color: "#F68B1E",
                         station: "小田原",
                         platform: "6",
                         fare: "周遊券 PASS",
@@ -544,13 +544,13 @@
                         mapQuery: "https://maps.app.goo.gl/gBVKXkSFXtjBH5R7A",
                         nextLeg: {
                             duration: "約 39 分",
-                            lineColor: "#f97316",
+                            lineColor: "#F68B1E",
                             lineName: "JR東海道本線 ・ 往小金井行"
                         }
                     },
                     {
                         code: "JT07",
-                        color: "#f97316",
+                        color: "#F68B1E",
                         station: "大船",
                         status: "目的地",
                         statusType: "end",
@@ -573,7 +573,7 @@
                 nodes: [
                     {
                         code: "JO09",
-                        color: "#0284c7",
+                        color: "#0067C0",
                         station: "大船",
                         platform: "8",
                         status: "起點站",
@@ -581,13 +581,13 @@
                         mapQuery: "https://maps.app.goo.gl/hxm4BsrVVoJLpSjWA",
                         nextLeg: {
                             duration: "約 6 分",
-                            lineColor: "#0284c7",
+                            lineColor: "#0067C0",
                             lineName: "JR橫須賀線 ・ 往逗子行"
                         }
                     },
                     {
-                        code: "EN01",
-                        color: "#16a34a",
+                        code: "EN15",
+                        color: "#009E52",
                         station: "鎌倉",
                         platform: "1",
                         status: "景點停留",
@@ -606,14 +606,14 @@
                         ],
                         nextLeg: {
                             duration: "約 8 分",
-                            lineColor: "#16a34a",
+                            lineColor: "#009E52",
                             lineName: "江ノ島電鉄線 ・ 往藤沢行",
                             fareBadge: "周遊券 PASS"
                         }
                     },
                     {
                         code: "EN12",
-                        color: "#16a34a",
+                        color: "#009E52",
                         station: "長谷",
                         status: "甜點巡禮",
                         statusType: "stop",
@@ -624,13 +624,13 @@
                         ],
                         nextLeg: {
                             duration: "約 12 分",
-                            lineColor: "#16a34a",
+                            lineColor: "#009E52",
                             lineName: "江ノ島電鉄線 ・ 往藤沢行"
                         }
                     },
                     {
                         code: "EN08",
-                        color: "#16a34a",
+                        color: "#009E52",
                         station: "鎌倉高校前",
                         status: "拍照打卡",
                         statusType: "stop",
@@ -641,13 +641,13 @@
                         ],
                         nextLeg: {
                             duration: "約 9 分",
-                            lineColor: "#16a34a",
+                            lineColor: "#009E52",
                             lineName: "江ノ島電鉄線 ・ 往藤沢行"
                         }
                     },
                     {
                         code: "EN06",
-                        color: "#16a34a",
+                        color: "#009E52",
                         station: "江ノ島",
                         platform: "1",
                         status: "深度遊覽",
@@ -665,13 +665,13 @@
                         ],
                         nextLeg: {
                             duration: "約 15 分",
-                            lineColor: "#16a34a",
+                            lineColor: "#009E52",
                             lineName: "江ノ島電鉄線 ・ 往藤沢行"
                         }
                     },
                     {
-                        code: "EN01",
-                        color: "#f97316",
+                        code: "JT08",
+                        color: "#F68B1E",
                         station: "藤沢",
                         platform: "3",
                         status: "晚餐停留",
@@ -684,13 +684,13 @@
                         ],
                         nextLeg: {
                             duration: "約 3 分",
-                            lineColor: "#f97316",
+                            lineColor: "#F68B1E",
                             lineName: "JR東海道本線 ・ 往古河行"
                         }
                     },
                     {
                         code: "JT07",
-                        color: "#f97316",
+                        color: "#F68B1E",
                         station: "大船",
                         platform: "2",
                         fare: "自藤沢 ¥199",
@@ -698,13 +698,13 @@
                         mapQuery: "https://maps.app.goo.gl/J1N8RJvwX791tdVD8",
                         nextLeg: {
                             duration: "約 40 分",
-                            lineColor: "#f97316",
+                            lineColor: "#F68B1E",
                             lineName: "JR東海道本線 ・ 往小金井行"
                         }
                     },
                     {
                         code: "JT04",
-                        color: "#f97316",
+                        color: "#F68B1E",
                         station: "品川",
                         platform: "6",
                         status: "目的地",
@@ -722,13 +722,13 @@
             {
                 day: "Day 4",
                 date: "4/8 (四)",
-                title: "淺草雷門・屋形船體驗・上野阿美橫町購物",
+                title: "淺草下町巡禮・屋形船體驗・上野阿美橫町購物",
                 totalYen: "¥853",
                 extraNote: "屋形船已於台灣預付 (NTD 4,000)",
                 nodes: [
                     {
                         code: "KK01",
-                        color: "#e11d48",
+                        color: "#00B2E5",
                         station: "品川",
                         platform: "2",
                         status: "起點站",
@@ -736,19 +736,19 @@
                         mapQuery: "https://maps.app.goo.gl/ebRCLCbBn5Kd7QAx7",
                         nextLeg: {
                             duration: "約 23 分",
-                            lineColor: "#e11d48",
-                            lineName: "京急本線普通 直通 都營淺草線 ・ 往青砥行"
+                            lineColor: "#E85298",
+                            lineName: "京急本線普通 (青砥行) 直通 都営浅草線 ・ 往浅草行"
                         }
                     },
                     {
-                        code: "A18",
-                        color: "#f59e0b",
+                        code: "G19",
+                        color: "#F39700",
                         station: "浅草",
                         platform: "2",
                         status: "景點與遊船",
                         statusType: "stop",
                         fare: "自品川 ¥422",
-                        transferNote: "遊覽淺草後，轉乘東京地鐵銀座線",
+                        transferNote: "遊覽後轉乘東京地鐵銀座線 (往澀谷方向)",
                         mapQuery: "https://maps.app.goo.gl/RUmLrcW5SSUihUcF7",
                         exits: [
                             { text: "雷門出口 (淺草寺)", style: "yellow" },
@@ -756,18 +756,18 @@
                         ],
                         pois: [
                             { icon: "ph-torii", color: "text-red-600", name: "淺草寺 (雷門)", query: "https://maps.app.goo.gl/HRgERnGG4AqMKAbr9" },
-                            { icon: "ph-storefront", color: "text-orange-500", name: "仲見世通商店街", query: "仲見世通り 浅草" },
+                            { icon: "ph-storefront", color: "text-amber-600", name: "仲見世通商店街", query: "仲見世通り 浅草" },
                             { icon: "ph-boat", color: "text-blue-600", name: "隅田川屋形船體驗", query: "https://maps.app.goo.gl/sjisxDL7Mp8GE1DM6" }
                         ],
                         nextLeg: {
                             duration: "約 5 分",
-                            lineColor: "#f59e0b",
+                            lineColor: "#F39700",
                             lineName: "東京メトロ銀座線 ・ 往渋谷行"
                         }
                     },
                     {
-                        code: "G16",
-                        color: "#65a30d",
+                        code: "JY05",
+                        color: "#9ACD32",
                         station: "上野",
                         platform: "2 ➔ 3",
                         status: "購物行程",
@@ -784,13 +784,13 @@
                         },
                         nextLeg: {
                             duration: "約 20 分",
-                            lineColor: "#65a30d",
+                            lineColor: "#9ACD32",
                             lineName: "JR山手線外回り ・ 往東京方面行"
                         }
                     },
                     {
                         code: "JY25",
-                        color: "#65a30d",
+                        color: "#9ACD32",
                         station: "品川",
                         platform: "3",
                         status: "目的地",
@@ -806,13 +806,13 @@
             {
                 day: "Day 5",
                 date: "4/9 (五)",
-                title: "千鳥之淵賞櫻・澀谷購物・秋葉原・目黑川夜櫻",
+                title: "千鳥之淵賞櫻・澀谷秋葉原逛街・目黑川夜櫻",
                 totalYen: "¥1,509",
                 extraNote: "東京賞櫻名所巡禮（千鳥之淵、靖國神社、目黑川櫻花）",
                 nodes: [
                     {
                         code: "JY25",
-                        color: "#65a30d",
+                        color: "#9ACD32",
                         station: "品川",
                         platform: "3",
                         status: "起點站",
@@ -820,13 +820,13 @@
                         mapQuery: "https://maps.app.goo.gl/ebRCLCbBn5Kd7QAx7",
                         nextLeg: {
                             duration: "約 13 分",
-                            lineColor: "#65a30d",
+                            lineColor: "#9ACD32",
                             lineName: "JR山手線外回り ・ 往渋谷方面行"
                         }
                     },
                     {
                         code: "Z01",
-                        color: "#9333ea",
+                        color: "#8F76D6",
                         station: "渋谷",
                         platform: "1 ➔ 2",
                         fare: "自品川 ¥209",
@@ -834,13 +834,13 @@
                         mapQuery: "https://maps.app.goo.gl/b2KMyCGwD1oCxFyeA",
                         nextLeg: {
                             duration: "約 14 分",
-                            lineColor: "#9333ea",
+                            lineColor: "#8F76D6",
                             lineName: "東京メトロ半蔵門線 ・ 往押上行"
                         }
                     },
                     {
                         code: "Z06",
-                        color: "#9333ea",
+                        color: "#8F76D6",
                         station: "九段下",
                         platform: "4 ➔ 3",
                         status: "賞櫻名所",
@@ -857,19 +857,19 @@
                         ],
                         nextLeg: {
                             duration: "約 12 分",
-                            lineColor: "#9333ea",
+                            lineColor: "#8F76D6",
                             lineName: "東京メトロ半蔵門線 (3號月台) ・ 往長津田行"
                         }
                     },
                     {
                         code: "JY20",
-                        color: "#65a30d",
+                        color: "#9ACD32",
                         station: "渋谷",
                         platform: "1 ➔ 2",
                         status: "逛街甜點",
                         statusType: "stop",
                         fare: "自九段下 ¥209",
-                        transferNote: "逛街後由 JR 澀谷站 2號月台搭乘山手線",
+                        transferNote: "逛街後換乘 JR 山手線内回り (2號月台)",
                         mapQuery: "https://maps.app.goo.gl/b2KMyCGwD1oCxFyeA",
                         pois: [
                             { icon: "ph-smiley", color: "text-blue-500", name: "ShinQ 2F SUN SUN STORE", query: "https://maps.app.goo.gl/AiHtbpqGyt3zR7bE8" },
@@ -878,13 +878,13 @@
                         ],
                         nextLeg: {
                             duration: "約 30 分",
-                            lineColor: "#65a30d",
+                            lineColor: "#9ACD32",
                             lineName: "JR山手線内回り ・ 往品川・東京方面行"
                         }
                     },
                     {
                         code: "H16",
-                        color: "#9ca3af",
+                        color: "#B5B5AC",
                         station: "秋葉原",
                         platform: "2 ➔ 1",
                         status: "點心停留",
@@ -898,13 +898,13 @@
                         ],
                         nextLeg: {
                             duration: "約 24 分",
-                            lineColor: "#9ca3af",
+                            lineColor: "#B5B5AC",
                             lineName: "東京メトロ日比谷線 ・ 往中目黒行"
                         }
                     },
                     {
                         code: "H01",
-                        color: "#9ca3af",
+                        color: "#B5B5AC",
                         station: "中目黒",
                         platform: "2 ➔ 3",
                         status: "夜櫻散步",
@@ -919,13 +919,13 @@
                         ],
                         nextLeg: {
                             duration: "約 3 分",
-                            lineColor: "#9ca3af",
+                            lineColor: "#B5B5AC",
                             lineName: "東京メトロ日比谷線 (3號月台) ・ 往竹ノ塚行"
                         }
                     },
                     {
-                        code: "H02",
-                        color: "#65a30d",
+                        code: "JY21",
+                        color: "#9ACD32",
                         station: "恵比寿",
                         platform: "2",
                         fare: "自中目黒 ¥178",
@@ -933,13 +933,13 @@
                         mapQuery: "恵比寿駅",
                         nextLeg: {
                             duration: "約 10 分",
-                            lineColor: "#65a30d",
+                            lineColor: "#9ACD32",
                             lineName: "JR山手線内回り ・ 往品川方面行"
                         }
                     },
                     {
                         code: "JY25",
-                        color: "#65a30d",
+                        color: "#9ACD32",
                         station: "品川",
                         platform: "1",
                         status: "目的地",
@@ -960,8 +960,8 @@
                 extraNote: "使用預購之 N'EX 來回車票回程，當日無額外日幣交通費",
                 nodes: [
                     {
-                        code: "NEX",
-                        color: "#dc2626",
+                        code: "JO17",
+                        color: "#E21F26",
                         station: "品川",
                         platform: "13",
                         status: "起點站",
@@ -972,14 +972,14 @@
                         ],
                         nextLeg: {
                             duration: "約 64 分",
-                            lineColor: "#dc2626",
+                            lineColor: "#E21F26",
                             lineName: "成田特快 N'EX (10:23 ~ 11:27) ・ 往成田空港行",
                             fareBadge: "來回票 PASS"
                         }
                     },
                     {
                         code: "NRT",
-                        color: "#0284c7",
+                        color: "#006564",
                         station: "成田第二航廈",
                         subName: "(T2)",
                         fare: "自品川 PASS (¥0)",
